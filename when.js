@@ -34,6 +34,9 @@
 	}
 }(Date))
 
+// simple small immutable wrapper around javascript Date class
+// © 2021 Royce Mitchell III <http://itas.link>
+// Released under MIT license.
 class When
 {
 	constructor ( date )
@@ -52,7 +55,7 @@ class When
 	toUTC() { return new WhenUT ( new Date ( this.getTime() ) ) }
 	valueOf() { return this.date.valueOf() } // milliseconds since 1970Jan01
 	getTime() { return this.date.getTime() } // milliseconds since 1970Jan01
-	getFullYear() { return this.date.getFullYear() }
+	getYear() { return this.date.getFullYear() }
 	getMonth() { return this.date.getMonth() + 1 }
 	getDate() { return this.date.getDate() }
 	getHours() { return this.date.getHours() }
@@ -61,7 +64,7 @@ class When
 	getMilliseconds() { return this.date.getMilliseconds() }
 	getTimezoneOffset() { return this.date.getTimezoneOffset() }
 	getDOW() { return this.date.getDay() } // 0=Sun, 6=Sat
-	setFullYear ( year )
+	setYear ( year )
 	{
 		let d = new Date ( this.getTime() )
 		d.setFullYear ( year )
@@ -145,7 +148,7 @@ class When
 			case '%f':
 				parts[i] = ( '00' + this.getMilliseconds() ).slice ( -3 )
 				break
-			case '%-f':
+			case '%-f': // strips trailing zeros
 				parts[i] = ( '00' + this.getMilliseconds() ).slice ( -3 ).replace ( /0+$/, '' )
 				break
 			case '%H':
@@ -189,7 +192,7 @@ class When
 				parts[i] = ( '0' + this.getYear() ).slice ( -2 )
 				break
 			case '%Y':
-				parts[i] = '' + this.getFullYear()
+				parts[i] = '' + this.getYear()
 				break
 			case '%z':
 				parts[i] = tz
@@ -247,7 +250,7 @@ class WhenUTC extends When
 	{
 		return new WhenUTC ( new Date ( y, mo, d, h, mi, s, ms ) )
 	}
-	getFullYear() { return this.date.getUTCFullYear() }
+	getYear() { return this.date.getUTCFullYear() }
 	getMonth() { return this.date.getUTCMonth() + 1 }
 	getDate() { return this.date.getUTCDate() }
 	getHours() { return this.date.getUTCHours() }
@@ -255,7 +258,7 @@ class WhenUTC extends When
 	getSeconds() { return this.date.getUTCSeconds() }
 	getMilliseconds() { return this.date.getUTCMilliseconds() }
 	getDOW() { return this.date.getUTCDay() } // 0=Sun, 6=Sat
-	setFullYear ( year )
+	setYear ( year )
 	{
 		let d = new Date ( this.getTime() )
 		d.setUTCFullYear ( year )
