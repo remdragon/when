@@ -51,8 +51,10 @@ class When
 	{
 		return new When ( new Date ( y, mo, d, h, mi, s, ms ) )
 	}
+	isUTC() { return false }
+	isLocal() { return !this.isUTC() }
 	toLocal() { return new When ( new Date ( this.getTime() ) ) }
-	toUTC() { return new WhenUT ( new Date ( this.getTime() ) ) }
+	toUTC() { return new WhenUTC ( new Date ( this.getTime() ) ) }
 	valueOf() { return this.date.valueOf() } // milliseconds since 1970Jan01
 	getTime() { return this.date.getTime() } // milliseconds since 1970Jan01
 	getYear() { return this.date.getFullYear() }
@@ -108,79 +110,86 @@ class When
 	}
 	to8601() { return this.format ( '%Y-%m-%dT%H:%M:%S.%f%z' ) }
 	to822() { return this.format ( '%b %d %Y %H:%M:%S.%f %-z' ) }
+	toLocaleString ( fmt, options )
+	{
+		return this.date.toLocaleString ( fmt, options )
+	}
 	format ( fmt )
 	{
-		let local = !( this instanceof WhenUTC )
-		let options = local ? {} : { 'timeZone': 'UTC' }
-		let parts = fmt.split ( /(%-?.)/ )
-		let tzoff = -this.getTimezoneOffset(), tz = 'Z', h
-		if ( local && tzoff != 0 )
+		let tzoff = -this.getTimezoneOffset(), tz = 'Z'
+		if ( this.isLocal() && tzoff != 0 )
 		{
 			let tzh = Math.floor ( tzoff / 60 )
 			let tzm = tzoff % ( tzh * 60 )
 			let prefix = tzh > 0 ? '+' : '-'
-			tzh = prefix + ( '0' + Math.abs ( tzh ) ).slice ( -2 )
-			tzm = ( '0' + tzm ).slice ( -2 )
+			tzh = prefix + pad0 ( Math.abs ( tzh ), 2 )
+			tzm = pad0 ( tzm, 2 )
 			tz = `${tzh}:${tzm}`
 		}
+		let parts = fmt.split ( /(%-?.)/ )
 		for ( let i = 1; i < parts.length; i += 2 )
 		{
 			switch ( parts[i] )
 			{
 			case '%a':
-				parts[i] = this.date.toLocaleString ( 'default', Object.assign ( {}, options, { 'weekday': 'short' } ) )
+				parts[i] = this.toLocaleString ( 'default',
+					{ 'weekday': 'short' }
+				)
 				break
 			case '%A':
-				parts[i] = this.date.toLocaleString ( 'default', Object.assign ( {}, options, { 'weekday': 'long' } ) )
+				parts[i] = this.toLocaleString ( 'default',
+					{ 'weekday': 'long' }
+				)
 				break
 			case '%b':
-				parts[i] = this.date.toLocaleString ( 'default', Object.assign ( {}, options, { 'month': 'short' } ) )
+				parts[i] = this.toLocaleString ( 'default',
+					{ 'month': 'short' }
+				)
 				break
 			case '%B':
-				parts[i] = this.date.toLocaleString ( 'default', Object.assign ( {}, options, { 'month': 'long' } ) )
+				parts[i] = this.toLocaleString ( 'default',
+					{ 'month': 'long' }
+				)
 				break
 			case '%d':
-				parts[i] = ( '0' + this.getDate() ).slice ( -2 )
+				parts[i] = pad0 ( this.getDate(), 2 )
 				break
 			case '%-d':
 				parts[i] = '' + this.getDate()
 				break
 			case '%f':
-				parts[i] = ( '00' + this.getMilliseconds() ).slice ( -3 )
+				parts[i] = pad0 ( this.getMilliseconds(), 3 )
 				break
 			case '%-f': // strips trailing zeros
-				parts[i] = ( '00' + this.getMilliseconds() ).slice ( -3 ).replace ( /0+$/, '' )
+				parts[i] = pad0 ( this.getMilliseconds(), 3 ).replace ( /0+$/, '' )
 				break
 			case '%H':
-				parts[i] = ( '0' + this.getHours() ).slice ( -2 )
+				parts[i] = pad0 ( this.getHours(), 2 )
 				break
 			case '%-H':
 				parts[i] = '' + this.getHours()
 				break
-			case '%I':
-				h = this.getHours()
+			case '%I': case '%-I':
+				let h = this.getHours()
 				h = ( h + 11 ) % 12 + 1
-				parts[i] = ( '0' + h ).slice ( -2 )
-				break
-			case '%-I':
-				h = this.getHours()
-				h = ( h + 11 ) % 12 + 1
+				if ( parts[i] == '%I' )
+					h = pad0 ( h, 2 )
 				parts[i] = '' + h
 				break
 			case '%M':
-				parts[i] = ( '0' + this.getMinutes() ).slice ( -2 )
+				parts[i] = pad0 ( this.getMinutes(), 2 )
 				break
 			case '%-M':
 				parts[i] = '' + this.getMinutes()
 				break
 			case '%m':
-				parts[i] = ( '0' + this.getMonth() ).slice ( -2 )
+				parts[i] = pad0 ( this.getMonth(), 2 )
 				break
 			case '%-m':
 				parts[i] = '' + this.getMonth()
 				break
 			case '%S':
-				parts[i] = ( '0' + this.getSeconds() ).slice ( -2 )
+				parts[i] = pad0 ( this.getSeconds(), 2 )
 				break
 			case '%-S':
 				parts[i] = '' + this.getSeconds()
@@ -189,7 +198,7 @@ class When
 				parts[i] = this.getDay()
 				break
 			case '%y':
-				parts[i] = ( '0' + this.getYear() ).slice ( -2 )
+				parts[i] = pad0 ( this.getYear(), 2 )
 				break
 			case '%Y':
 				parts[i] = '' + this.getYear()
@@ -199,6 +208,9 @@ class When
 				break
 			case '%-z': // DEVIATION from strftime.org
 				parts[i] = tz.replace ( ':', '' )
+				break
+			case '%%':
+				parts[i] = '%'
 				break
 			}
 		}
@@ -250,6 +262,7 @@ class WhenUTC extends When
 	{
 		return new WhenUTC ( new Date ( y, mo, d, h, mi, s, ms ) )
 	}
+	isUTC() { return true }
 	getYear() { return this.date.getUTCFullYear() }
 	getMonth() { return this.date.getUTCMonth() + 1 }
 	getDate() { return this.date.getUTCDate() }
@@ -300,4 +313,19 @@ class WhenUTC extends When
 		d.setUTCMilliseconds ( milliseconds )
 		return new WhenUTC ( d )
 	}
+	toLocaleString ( fmt, options )
+	{
+		options = Object.assign ( {}, options ?? {}, { timeZone: 'UTC' } )
+		return this.date.toLocaleString ( fmt, options )
+	}
+}
+
+function pad0 ( s, n )
+{
+	if ( n <= 1 )
+		throw `invalid n=${n}`
+	s = '' + s
+	if ( s.length < n )
+		s = '0'.repeat ( n - s.length ) + s
+	return s
 }
