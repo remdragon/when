@@ -45,7 +45,7 @@ class When
 		this.date = date ?? new Date()
 		if ( !this.date instanceof Date ) throw 'expecting Date type'
 	}
-	static parse ( s ) { return new When ( Date.parse ( s ) ) }
+	static parse ( s ) { return new When ( new Date ( Date.parse ( s ) ) ) }
 	static fromTime ( ms ) { return new When ( new Date ( ms ) ) }
 	static fromParts ( y, mo, d, h, mi, s, ms )
 	{
@@ -256,7 +256,7 @@ class When
 
 class WhenUTC extends When
 {
-	static parse ( s ) { return new WhenUTC ( Date.parse ( s ) ) }
+	static parse ( s ) { return new WhenUTC ( new Date ( Date.parse ( s ) ) ) }
 	static fromTime ( ms ) { return new WhenUTC ( new Date ( ms ) ) }
 	static fromParts ( y, mo, d, h, mi, s, ms )
 	{
